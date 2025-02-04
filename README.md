@@ -81,3 +81,13 @@ This project is licensed under the GNU Affero General Public License v3.0 - see 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## TODO
+- test local pipeline for metadata extraction and figures description.
+- add processing of word and pptx (through conversion of these to pdf, or through different pipelines, depending on the performance).
+- test all pipelines run properly and results are easily generated.
+- generate poetry file for the project.
+- test local api for pdf processing.
+- test dockerfile.
+- create docker-compose file.
+- update README if needed.
