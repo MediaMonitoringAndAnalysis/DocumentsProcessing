@@ -69,9 +69,9 @@ class PDFExtractor:
     def __init__(
         self,
         model_name: str,
+        inference_pipeline_name: Literal["VLM", "OpenAI"],
         punct_model_name: str = "1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase",
         api_key: str = None,
-        inference_pipeline_name: Literal["VLM", "OpenAI"] = "VLM",
     ):
         self.inference_pipeline = (
             VLMInferencePipeline(model_name)
