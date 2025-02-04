@@ -83,11 +83,11 @@ This project is licensed under the GNU Affero General Public License v3.0 - see 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## TODO
-- test local pipeline for metadata extraction and figures description.
-- add processing of word and pptx (through conversion of these to pdf, or through different pipelines, depending on the performance).
-- test all pipelines run properly and results are easily generated.
-- generate poetry file for the project.
-- test local api for pdf processing.
-- test dockerfile.
-- create docker-compose file.
+- test local pipeline for metadata extraction and figures description (high priority).
+- add processing of word and pptx (through conversion of these to pdf, or through different pipelines, depending on the performance) (high priority).
+- test all pipelines run properly and results are easily generated (high priority).
+- generate poetry file for the project (high priority).
+- test local api for pdf processing (medium priority).
+- test dockerfile (medium priority).
+- create docker-compose file (low priority).
 - update README if needed.
