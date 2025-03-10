@@ -32,37 +32,47 @@ wget https://github.com/moured/YOLOv10-Document-Layout-Analysis/releases/downloa
 mv yolov10x_best.pt models/yolov10x_best.pt
 ```
 
+4. Download [Libre Office](https://www.libreoffice.org) to convert word and pptx files to pdf.
+
 ## Usage
 
-### Basic Usage
-
 ```python
-from src.pdf_extraction import PDFExtractor
+import os
+import argparse
+from src.documents_data_extraction import DocumentsDataExtractor
 
-# Initialize the extractor
-extractor = PDFExtractor(
-    model_name="Qwen/Qwen2.5-VL-7B-Instruct",
-    inference_pipeline_name="VLM"
+inference_pipeline_name = Literal["Ollama", "OpenAI"]
+
+documents_data_extractor = DocumentsDataExtractor(
+    inference_pipeline_name
 )
 
-# Process a PDF file
-results = extractor(
-    pdf_file_name="document.pdf",
-    pdf_doc_folder_path="path/to/pdf/folder",
-    extract_figures_bool=True,
-    extract_metadata_bool=True
+# Define paths
+base_path = "data"
+pdf_folder = os.path.join(base_path, "original_docs")
+figures_folder = os.path.join(base_path, "figures")
+
+# Create necessary directories
+os.makedirs(pdf_folder, exist_ok=True)
+os.makedirs(figures_folder, exist_ok=True)
+
+# Test PDF file
+pdf_filename = "test.pdf"
+
+# Extract information
+results_df = documents_data_extractor(
+    file_name=pdf_filename,
+    doc_folder_path=pdf_folder,
+    extract_metadata_bool=True,
+    extract_figures_bool=True
 )
+
+# Save results
+output_path = "test_output.csv"
+results_df.to_csv(output_path, index=False)
 ```
 
 ### Using OpenAI Models
-
-```python
-extractor = PDFExtractor(
-    model_name="gpt-4o",
-    inference_pipeline_name="OpenAI",
-    api_key="your-api-key"
-)
-```
 
 ## Output Format
 
@@ -83,11 +93,7 @@ This project is licensed under the GNU Affero General Public License v3.0 - see 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## TODO
-- test local pipeline for metadata extraction and figures description (high priority).
-- add processing of word and pptx (through conversion of these to pdf, or through different pipelines, depending on the performance) (high priority).
-- test all pipelines run properly and results are easily generated (high priority).
-- generate poetry file for the project (high priority).
+- generate poetry file for the project (medium priority).
 - test local api for pdf processing (medium priority).
 - test dockerfile (medium priority).
 - create docker-compose file (low priority).
-- update README if needed.
