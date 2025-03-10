@@ -1,17 +1,17 @@
 import os
-from src.pdf_extraction import PDFExtractor
+import argparse
+from documents_processing.documents_data_extraction import DocumentsDataExtractor
 
-def test_pdf_extraction():
+
+def test_pdf_extraction(inference_pipeline_name: str):
     # Initialize the extractor
-    pdf_extractor = PDFExtractor(
-        model_name="gpt-4o",
-        inference_pipeline_name="OpenAI",
-        #api_key="....",
+    documents_data_extractor = DocumentsDataExtractor(
+        inference_pipeline_name
     )
     
     # Define paths
     base_path = "data"
-    pdf_folder = os.path.join(base_path, "pdf")
+    pdf_folder = os.path.join(base_path, "original_docs")
     figures_folder = os.path.join(base_path, "figures")
     
     # Create necessary directories
@@ -19,12 +19,12 @@ def test_pdf_extraction():
     os.makedirs(figures_folder, exist_ok=True)
     
     # Test PDF file
-    pdf_filename = "document.docx"
+    pdf_filename = "test.pdf"
     
     # Extract information
-    results_df = pdf_extractor(
-        pdf_file_name=pdf_filename,
-        pdf_doc_folder_path=pdf_folder,
+    results_df = documents_data_extractor(
+        file_name=pdf_filename,
+        doc_folder_path=pdf_folder,
         extract_metadata_bool=True,
         extract_figures_bool=True
     )
@@ -48,4 +48,8 @@ def test_pdf_extraction():
     print(f"\nResults saved to: {output_path}")
 
 if __name__ == "__main__":
-    test_pdf_extraction() 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--inference_pipeline", type=str, default="OpenAI", choices=["OpenAI", "Ollama"])
+    args = parser.parse_args()
+    
+    test_pdf_extraction(args.inference_pipeline) 
