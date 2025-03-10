@@ -79,7 +79,8 @@ class OpenAIInferencePipeline(InferencePipeline):
     ):
         from openai import OpenAI
 
-        self.model = OpenAI(model=model_name, api_key=api_key)
+        self.model = OpenAI(api_key=api_key)
+        self.model_name = model_name
 
     def inference(self, messages: List[Dict], structured_output: bool) -> str:
         response = (
@@ -95,4 +96,3 @@ class OpenAIInferencePipeline(InferencePipeline):
         if structured_output:
             return literal_eval(response)
         return response
-

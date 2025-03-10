@@ -3,9 +3,11 @@ import contextlib
 import os
 import requests
 import fitz
+import subprocess
 import base64
 import pandas as pd
 from typing import List, Dict, Literal
+from pathlib import Path
 from ast import literal_eval
 from tqdm import tqdm
 from src.figures_extraction import extract_figures, _extract_first_page_to_base64
@@ -153,21 +155,32 @@ class PDFExtractor:
                 figs_df = pd.concat([figs_df, pd.DataFrame([one_fig_metadata])])
 
                 base64_image = self.encode_image(fig_path)
-                one_fig_prompt = [
-                    {"role": "system", "content": system_prompts[fig_type]},
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}",
-                                    "detail": "low",
-                                },
-                            }
-                        ],
-                    },
-                ]
+                if True: # OpenAI
+                    one_fig_prompt = [
+                        {"role": "system", "content": system_prompts[fig_type]},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{base64_image}",
+                                        "detail": "low",
+                                    },
+                                }
+                            ],
+                        },
+                    ]
+                else:  # VLM
+                    one_fig_prompt = [
+                        {
+                            "image": f"data:image/jpeg;base64,{base64_image}"
+                        },
+                        {
+                            "text": system_prompts[fig_type]
+                        }
+                    ]
+
                 prompts.append(one_fig_prompt)
 
         answers: List[str] = []
@@ -198,21 +211,31 @@ class PDFExtractor:
         for one_page_path in metadata_pages_paths:
             base64_image = self.encode_image(one_page_path)
 
-            prompt = [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "image": {
-                                "url": f"data:image/jpeg;base64,{base64_image}",
-                                "detail": "low",
+            if True: # OpenAI
+                prompt = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": metadata_extraction_prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}",
+                                    "detail": "low",
+                                },
                             },
-                        },
-                        {"type": "text", "text": metadata_extraction_prompt},
-                    ],
-                },
-            ]
+                        ],
+                    },
+                ]
+            else: # VLM
+                prompt = [
+                    {
+                        "image": f"data:image/jpeg;base64,{base64_image}"
+                    },
+                    {
+                        "text": metadata_extraction_prompt
+                    }
+                ]
 
             try:
                 answer = self.inference_pipeline.inference(
@@ -226,7 +249,7 @@ class PDFExtractor:
                 if answer.get(field, "-") != "-":
                     metadata_dict[field] = answer[field]
 
-            if all(metadata_dict.values() != "-"):
+            if all(value != "-" for value in metadata_dict.values()):
                 return metadata_dict
 
         return metadata_dict
@@ -249,6 +272,12 @@ class PDFExtractor:
 
         if not os.path.exists(pdf_file_path):
             self._download_pdf(pdf_url, pdf_file_path)
+
+        # Convert to PDF if the file is not a PDF
+        if not pdf_file_path.lower().endswith('.pdf'):
+            converted_pdf_path = os.path.splitext(pdf_file_path)[0] + ".pdf"
+            convert_to_pdf(pdf_file_path, converted_pdf_path)
+            pdf_file_path = converted_pdf_path
 
         extracted_text = self._extract_pdf_text(pdf_file_path)
         df_raw_text = pd.DataFrame(
@@ -288,3 +317,57 @@ class PDFExtractor:
                 project_extracted_text[field_to_final_name[field]] = str(data)
 
         return project_extracted_text
+
+
+def convert_to_pdf(input_file: str, output_file: str, libreoffice_path: str = None) -> None:
+    """
+    Convert a docx/doc/pptx to PDF using LibreOffice
+    
+    Args:
+        input_file: Path to input document
+        output_file: Path where to save PDF
+        libreoffice_path: Optional path to LibreOffice executable. If not provided,
+                         will attempt to detect based on OS.
+    """
+    # Try to find LibreOffice path if not provided, depending on OS
+    if not libreoffice_path:
+        if sys.platform == "darwin":  # macOS
+            libreoffice_path = "/Applications/LibreOffice.app/Contents/MacOS/soffice"
+        elif sys.platform == "win32":  # Windows
+            possible_paths = [
+                r"C:\Program Files\LibreOffice\program\soffice.exe",
+                r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+                os.path.expanduser("~\\AppData\\Programs\\LibreOffice\\program\\soffice.exe")
+            ]
+            libreoffice_path = next((path for path in possible_paths if os.path.exists(path)), None)
+        else:  # Linux
+            try:
+                libreoffice_path = subprocess.check_output(['which', 'soffice']).decode().strip()
+            except subprocess.CalledProcessError:
+                libreoffice_path = None
+
+    if not libreoffice_path or not os.path.exists(libreoffice_path):
+        raise RuntimeError("LibreOffice not found. Please install LibreOffice to convert documents to PDF.")
+
+    file_ext = Path(input_file).suffix.lower()
+
+    # Convert if not pdf
+    if file_ext == '.pdf':
+        print("File is already a PDF")
+    elif file_ext in ['.docx', '.doc', '.pptx']:
+        try:
+            command = [
+                libreoffice_path,
+                "--headless",
+                "--convert-to",
+                "pdf",
+                input_file,
+                "--outdir",
+                os.path.dirname(output_file) or "."
+            ]
+            subprocess.run(command, check=True)
+            print("Conversion successful!")
+        except subprocess.CalledProcessError:
+            print("Error during conversion")
+    else:
+        print("Invalid file format. Only PDF, DOCX, DOC and PPTX files are supported")

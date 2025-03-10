@@ -5,15 +5,15 @@ import os
 from typing import Dict, List
 import cv2
 import supervision as sv  # pip install supervision
-from ultralytics import YOLOv10
+from ultralytics import YOLO
 from PIL import Image
 import base64
 import fitz
 from io import BytesIO
 
 needed_features = ["Table", "Picture"]
-model_path = "yolov10x_best.pt"
-image_segmentation_model = YOLOv10(model_path, verbose=False)
+model_path = "./models/yolov10x_best.pt"
+image_segmentation_model = YOLO(model_path, verbose=False)
 
 face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
