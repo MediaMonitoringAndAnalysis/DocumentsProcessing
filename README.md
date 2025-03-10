@@ -1,15 +1,13 @@
 # DocumentsProcessing
-
-A Python library for extracting and processing information from PDF documents, including text, figures, tables, and metadata. The library uses advanced vision-language models for image understanding and text extraction.
+A Python library for extracting and processing information from PDF documents using advanced vision-language models.
 
 ## Features
-
-- PDF text extraction with intelligent text cleaning and formatting
-- Automatic figure and table detection using YOLOv10
-- Face detection and removal for privacy protection
-- Metadata extraction (publication date, authors, title)
-- Support for multiple inference pipelines (VLM and OpenAI)
-- Structured output formatting
+- Extract text content from PDF documents
+- Extract figures and images with captions
+- Extract metadata (title, authors, publication date, etc.)
+- Process documents using various LLM backends (OpenAI, Ollama)
+- Command-line interface for easy document processing
+- Flask API for integration with web applications
 
 ## Installation
 
@@ -33,6 +31,18 @@ mv yolov10x_best.pt models/yolov10x_best.pt
 ```
 
 4. Download [Libre Office](https://www.libreoffice.org) to convert word and pptx files to pdf.
+
+5. Install the project:
+* Install the project from the repository:
+```bash
+git clone https://github.com/yourusername/documents-processing.git
+cd documents-processing
+pip install -e .
+```
+* Install with pip:
+```bash
+pip install git+https://github.com/MediaMonitoringAndAnalysis/documents-processing.git
+```
 
 ## Usage
 
@@ -91,6 +101,17 @@ This project is licensed under the GNU Affero General Public License v3.0 - see 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (git checkout -b feature/amazing-feature)
+3. Commit your changes (git commit -m 'Add some amazing feature')
+4. Push to the branch (git push origin feature/amazing-feature)
+5. Open a Pull Request
+
+## Acknowledgements
+
+This project uses various open-source libraries and models
+Special thanks to the contributors and maintainers of the dependencies
 
 ## TODO
 - generate poetry file for the project (medium priority).
