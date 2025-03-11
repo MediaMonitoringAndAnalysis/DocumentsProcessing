@@ -196,6 +196,7 @@ class DocumentsDataExtractor:
         self,
         file_name: str,
         doc_folder_path: os.PathLike,
+        figures_saving_path: os.PathLike,
         doc_url: str = None,
         extract_metadata_bool: bool = False,
         extract_figures_bool: bool = False,
@@ -208,7 +209,6 @@ class DocumentsDataExtractor:
         # doc_folder_path = os.path.abspath(doc_folder_path)
         doc_file_path = os.path.join(doc_folder_path, file_name)
 
-        figures_saving_path = os.path.join(doc_folder_path, "..", "figures")
 
         if not os.path.exists(doc_file_path):
             _download_pdf(doc_url, doc_file_path)
