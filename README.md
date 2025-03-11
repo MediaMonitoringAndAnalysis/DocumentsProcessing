@@ -35,13 +35,13 @@ mv yolov10x_best.pt models/yolov10x_best.pt
 5. Install the project:
 * Install the project from the repository:
 ```bash
-git clone https://github.com/yourusername/documents-processing.git
-cd documents-processing
+git clone https://github.com/MediaMonitoringAndAnalysis/DocumentsProcessing.git
+cd DocumentsProcessing
 pip install -e .
 ```
 * Install with pip:
 ```bash
-pip install git+https://github.com/MediaMonitoringAndAnalysis/documents-processing.git
+pip install git+https://github.com/MediaMonitoringAndAnalysis/DocumentsProcessing.git
 ```
 
 ## Usage
@@ -49,7 +49,7 @@ pip install git+https://github.com/MediaMonitoringAndAnalysis/documents-processi
 ```python
 import os
 import argparse
-from src.documents_data_extraction import DocumentsDataExtractor
+from documents_processing import DocumentsDataExtractor
 
 inference_pipeline_name = Literal["Ollama", "OpenAI"]
 
