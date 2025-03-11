@@ -21,6 +21,7 @@ from documents_processing.utils import (
 from documents_processing.prompts import system_prompts, metadata_extraction_prompt
 from llm_multiprocessing_inference import get_answers
 
+
 inference_pipelines = {
     "OpenAI": {
         "model_name": "gpt-4o-mini",
@@ -31,8 +32,9 @@ inference_pipelines = {
         "model_name": "llava:7b-v1.6-mistral-q4_K_M",
         "inference_pipeline_name": "Ollama",
         "api_key": None,
-    }
+    },
 }
+
 
 class DocumentsDataExtractor:
     def __init__(
@@ -41,7 +43,9 @@ class DocumentsDataExtractor:
         punct_model_name: str = "1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase",
     ):
         self.model_name = inference_pipelines[inference_pipeline_name]["model_name"]
-        self.inference_pipeline_name = inference_pipelines[inference_pipeline_name]["inference_pipeline_name"]
+        self.inference_pipeline_name = inference_pipelines[inference_pipeline_name][
+            "inference_pipeline_name"
+        ]
         self.api_key = inference_pipelines[inference_pipeline_name]["api_key"]
         self.punct_extractor = PunctCapSegModelONNX.from_pretrained(punct_model_name)
 
@@ -85,7 +89,7 @@ class DocumentsDataExtractor:
                 figs_df = pd.concat([figs_df, pd.DataFrame([one_fig_metadata])])
 
                 base64_image = encode_image(fig_path)
-                if True:  # OpenAI
+                if self.inference_pipeline_name == "OpenAI":  # OpenAI
                     one_fig_prompt = [
                         {"role": "system", "content": system_prompts[fig_type]},
                         {
@@ -101,26 +105,26 @@ class DocumentsDataExtractor:
                             ],
                         },
                     ]
-                else:  # VLM
+                else:  # Ollama
                     one_fig_prompt = [
-                        {"image": f"data:image/jpeg;base64,{base64_image}"},
-                        {"text": system_prompts[fig_type]},
+                        {"role": "system", "content": system_prompts[fig_type]},
+                        {
+                            "role": "user",
+                            "images": [fig_path],
+                        }
                     ]
-
                 prompts.append(one_fig_prompt)
 
-        answers: List[str] = []
-        for prompt in prompts:
-            try:
-                one_entry_answer = self.inference_pipeline.inference(
-                    prompt, structured_output=False
-                )
+        answers = get_answers(
+            prompts=prompts,
+            default_response={},
+            response_type="structured",
+            api_pipeline=self.inference_pipeline_name,
+            model=self.model_name,
+            api_key=self.api_key,
+            show_progress_bar=False,
+        )
 
-            except Exception as e:
-                print(f"Error in VLM inference: {e}")
-                one_entry_answer = "-"
-
-            answers.append(one_entry_answer)
 
         figs_df["text"] = answers
         return figs_df
@@ -136,7 +140,7 @@ class DocumentsDataExtractor:
 
         for one_page_path in metadata_pages_paths:
 
-            if True:  # OpenAI
+            if self.inference_pipeline_name == "OpenAI":  # OpenAI
                 base64_image = encode_image(one_page_path)
                 prompt = [
                     {
@@ -155,8 +159,14 @@ class DocumentsDataExtractor:
                 ]
             else:  # Ollama
                 prompt = [
-                    {"image": f"data:image/jpeg;base64,{base64_image}"},
-                    {"text": metadata_extraction_prompt},
+                    {
+                        "role": "system",
+                        "content": metadata_extraction_prompt,
+                    },
+                    {
+                        "role": "user",
+                        "images": [one_page_path],
+                    },
                 ]
 
             try:

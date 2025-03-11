@@ -6,6 +6,8 @@ from typing import List, Optional
 import requests
 import base64   
 
+additional_supported_file_extensions = [".docx", ".doc", ".pptx"]
+supported_file_extensions = [".pdf"] + additional_supported_file_extensions
 
 class SuppressPrint:
     def __enter__(self):
@@ -66,7 +68,7 @@ def convert_to_pdf(
     # Convert if not pdf
     if file_ext == ".pdf":
         print("File is already a PDF")
-    elif file_ext in [".docx", ".doc", ".pptx"]:
+    elif file_ext in additional_supported_file_extensions:
         try:
             command = [
                 libreoffice_path,
