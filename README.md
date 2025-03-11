@@ -13,12 +13,12 @@ A Python library for extracting and processing information from PDF documents us
 
 ### Dependencies
 
-1. Install the base requirements:
+<!-- 1. Install the base requirements:
 ```bash
 pip install pdf2image numpy opencv-python pillow torch transformers requests PyMuPDF pandas tqdm nltk
-```
+``` -->
 
-2. Install YOLOv10 for document layout analysis:
+<!-- 2. Install YOLOv10 for document layout analysis:
 ```bash
 pip install -q git+https://github.com/THU-MIG/yolov10.git
 pip install -q supervision
@@ -28,11 +28,11 @@ pip install -q supervision
 ```bash
 wget https://github.com/moured/YOLOv10-Document-Layout-Analysis/releases/download/doclaynet_weights/yolov10x_best.pt
 mv yolov10x_best.pt models/yolov10x_best.pt
-```
+``` -->
 
-4. Download [Libre Office](https://www.libreoffice.org) to convert word and pptx files to pdf.
+1. Download [Libre Office](https://www.libreoffice.org) to convert word and pptx files to pdf.
 
-5. Install the project:
+2. Install the project:
 * Install the project from the repository:
 ```bash
 git clone https://github.com/MediaMonitoringAndAnalysis/DocumentsProcessing.git
