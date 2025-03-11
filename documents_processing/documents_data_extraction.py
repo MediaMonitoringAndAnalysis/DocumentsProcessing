@@ -205,6 +205,7 @@ class DocumentsDataExtractor:
         project_extracted_text = pd.DataFrame(
             columns=["text", "Entry Type", "entry_fig_path"]
         )
+        doc_folder_path = os.path.abspath(doc_folder_path)
         doc_file_path = os.path.join(doc_folder_path, file_name)
 
         figures_saving_path = os.path.join(doc_folder_path, "..", "figures")
