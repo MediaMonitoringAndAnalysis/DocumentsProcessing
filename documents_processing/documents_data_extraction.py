@@ -115,18 +115,18 @@ class DocumentsDataExtractor:
                     ]
                 prompts.append(one_fig_prompt)
 
-        answers = get_answers(
-            prompts=prompts,
-            default_response={},
-            response_type="structured",
-            api_pipeline=self.inference_pipeline_name,
-            model=self.model_name,
-            api_key=self.api_key,
-            show_progress_bar=False,
-        )
+        if len(prompts) > 0:
+            answers = get_answers(
+                prompts=prompts,
+                default_response={},
+                response_type="structured",
+                api_pipeline=self.inference_pipeline_name,
+                model=self.model_name,
+                api_key=self.api_key,
+                show_progress_bar=False,
+            )
 
-
-        figs_df["text"] = answers
+            figs_df["text"] = answers
         return figs_df
 
     def extract_metadata(
