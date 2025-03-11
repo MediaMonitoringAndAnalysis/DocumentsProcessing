@@ -169,19 +169,19 @@ class DocumentsDataExtractor:
                     },
                 ]
 
-            try:
-                answer = get_answers(
-                    prompts=[prompt],
-                    default_response=default_answer,
-                    response_type="structured",
-                    api_pipeline=self.inference_pipeline_name,
-                    model=self.model_name,
-                    api_key=self.api_key,
-                    show_progress_bar=False,
-                )[0]
-            except Exception as e:
-                print(f"Error in inference: {e}")
-                answer = default_answer
+            # try:
+            answer = get_answers(
+                prompts=[prompt],
+                default_response=default_answer,
+                response_type="structured",
+                api_pipeline=self.inference_pipeline_name,
+                model=self.model_name,
+                api_key=self.api_key,
+                show_progress_bar=False,
+            )[0]
+            # except Exception as e:
+            #     print(f"Error in inference: {e}")
+            #     answer = default_answer
 
             for field in ["date", "author", "title"]:
                 if answer.get(field, "-") != "-":
