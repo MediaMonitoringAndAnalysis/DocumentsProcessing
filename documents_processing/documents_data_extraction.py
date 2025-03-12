@@ -6,7 +6,7 @@ import fitz
 import subprocess
 import base64
 import pandas as pd
-from typing import List, Dict, Literal
+from typing import List, Dict, Literal, Optional
 from documents_processing.figures_extraction import extract_figures
 from nltk.tokenize import sent_tokenize
 from punctuators.models import PunctCapSegModelONNX
@@ -41,8 +41,12 @@ class DocumentsDataExtractor:
         self,
         inference_pipeline_name: Literal["Ollama", "OpenAI"],
         punct_model_name: str = "1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase",
+        model_name: Optional[str] = None,
     ):
-        self.model_name = inference_pipelines[inference_pipeline_name]["model_name"]
+        if model_name is None:
+            self.model_name = inference_pipelines[inference_pipeline_name]["model_name"]
+        else:
+            self.model_name = model_name
         self.inference_pipeline_name = inference_pipelines[inference_pipeline_name][
             "inference_pipeline_name"
         ]
