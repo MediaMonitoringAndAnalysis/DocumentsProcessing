@@ -15,9 +15,18 @@ from ultralytics import YOLOv10
 
 needed_features = ["Table", "Picture"]
 
+yolo_model_name = "yolov10x_best.pt"
+model_path = os.path.join("models", yolo_model_name)
 
-model = YOLOv10.from_pretrained('jameslahm/yolov10x')
-image_segmentation_model = model
+def _load_yolo_model(model_name: str):
+    if not os.path.exists(model_path):
+        os.makedirs("models", exist_ok=True)
+        os.system(f"wget https://github.com/moured/YOLOv10-Document-Layout-Analysis/releases/download/doclaynet_weights/{model_name}")
+        os.system(f"mv {model_name} {model_path}")
+
+    return YOLO(model_path)
+
+image_segmentation_model = _load_yolo_model(yolo_model_name)
 
 face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
