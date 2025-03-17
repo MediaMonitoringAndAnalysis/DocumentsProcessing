@@ -259,19 +259,15 @@ class DocumentsDataExtractor:
             doc_file_path = converted_pdf_path
 
         extracted_text = self._extract_pdf_text(doc_file_path)
-        extracted_ocr_text = _ocr_handwritten_pdf(doc_file_path)
+        if len(str(extracted_text)) < 10:
+            extracted_text = _ocr_handwritten_pdf(doc_file_path)
         df_raw_text = pd.DataFrame(
             [
                 {
                     "text": extracted_text,
                     "Entry Type": "PDF Text",
                     "entry_fig_path": "-",
-                },
-                {
-                    "text": extracted_ocr_text,
-                    "Entry Type": "PDF OCR Text",
-                    "entry_fig_path": "-",
-                },
+                }
             ]
         )
 
