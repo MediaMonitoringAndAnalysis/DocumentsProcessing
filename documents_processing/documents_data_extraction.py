@@ -20,7 +20,7 @@ from documents_processing.utils import (
 )
 from documents_processing.prompts import system_prompts, metadata_extraction_prompt
 from llm_multiprocessing_inference import get_answers
-
+from PIL import Image
 
 inference_pipelines = {
     "OpenAI": {
@@ -42,6 +42,7 @@ class DocumentsDataExtractor:
         inference_pipeline_name: Literal["Ollama", "OpenAI"],
         punct_model_name: str = "1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase",
         model_name: Optional[str] = None,
+        api_key: Optional[str] = None,
     ):
         if model_name is None:
             self.model_name = inference_pipelines[inference_pipeline_name]["model_name"]
@@ -50,7 +51,10 @@ class DocumentsDataExtractor:
         self.inference_pipeline_name = inference_pipelines[inference_pipeline_name][
             "inference_pipeline_name"
         ]
-        self.api_key = inference_pipelines[inference_pipeline_name]["api_key"]
+        if api_key is None:
+            self.api_key = inference_pipelines[inference_pipeline_name]["api_key"]
+        else:
+            self.api_key = api_key
         self.punct_extractor = PunctCapSegModelONNX.from_pretrained(punct_model_name)
 
     def _clean_entries(self, entries: List[str]) -> List[str]:
@@ -143,9 +147,10 @@ class DocumentsDataExtractor:
         metadata_dict = default_answer
 
         for one_page_path in metadata_pages_paths:
+            base64_image = encode_image(one_page_path)
 
             if self.inference_pipeline_name == "OpenAI":  # OpenAI
-                base64_image = encode_image(one_page_path)
+                
                 prompt = [
                     {
                         "role": "user",
@@ -169,23 +174,23 @@ class DocumentsDataExtractor:
                     },
                     {
                         "role": "user",
-                        "images": [one_page_path],
+                        "images": [base64_image],
                     },
                 ]
 
-            # try:
-            answer = get_answers(
-                prompts=[prompt],
-                default_response=default_answer,
-                response_type="structured",
-                api_pipeline=self.inference_pipeline_name,
-                model=self.model_name,
-                api_key=self.api_key,
-                show_progress_bar=False,
-            )[0]
-            # except Exception as e:
-            #     print(f"Error in inference: {e}")
-            #     answer = default_answer
+            try:
+                answer = get_answers(
+                    prompts=[prompt],
+                    default_response=default_answer,
+                    response_type="structured",
+                    api_pipeline=self.inference_pipeline_name,
+                    model=self.model_name,
+                    api_key=self.api_key,
+                    show_progress_bar=False,
+                )[0]
+            except Exception as e:
+                print(f"Error in inference: {e}")
+                answer = default_answer
 
             for field in ["date", "author", "title"]:
                 if answer.get(field, "-") != "-":
