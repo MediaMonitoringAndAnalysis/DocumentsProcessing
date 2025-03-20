@@ -6,7 +6,7 @@ import fitz
 import subprocess
 import base64
 import pandas as pd
-from typing import List, Dict, Literal, Optional
+from typing import List, Dict, Literal, Optional, Union
 from documents_processing.figures_extraction import extract_figures
 from nltk.tokenize import sent_tokenize
 from punctuators.models import PunctCapSegModelONNX
@@ -18,7 +18,7 @@ from documents_processing.utils import (
     _download_pdf,
     encode_image,
 )
-from documents_processing.prompts import system_prompts, metadata_extraction_prompt
+from documents_processing.prompts import system_prompts, metadata_extraction_prompt, interview_metadata_extraction_prompt
 from llm_multiprocessing_inference import get_answers
 from PIL import Image
 import pytesseract
@@ -171,12 +171,13 @@ class DocumentsDataExtractor:
     def extract_metadata(
         self,
         metadata_pages_paths: List[os.PathLike],
-        default_answer: Dict[str, str] = {"date": "-", "author": "-", "title": "-"},
+        extraction_prompt: str,
+        default_answer: Dict[str, str],
     ) -> dict:
         """Extract metadata from a PDF file."""
 
         metadata_dict = default_answer
-
+        
         for one_page_path in metadata_pages_paths:
             base64_image = encode_image(one_page_path)
 
@@ -186,7 +187,7 @@ class DocumentsDataExtractor:
                     {
                         "role": "user",
                         "content": [
-                            {"type": "text", "text": metadata_extraction_prompt},
+                            {"type": "text", "text": extraction_prompt},
                             {
                                 "type": "image_url",
                                 "image_url": {
@@ -201,7 +202,7 @@ class DocumentsDataExtractor:
                 prompt = [
                     {
                         "role": "system",
-                        "content": metadata_extraction_prompt,
+                        "content": extraction_prompt,
                     },
                     {
                         "role": "user",
@@ -223,7 +224,7 @@ class DocumentsDataExtractor:
                 print(f"Error in inference: {e}")
                 answer = default_answer
 
-            for field in ["date", "author", "title"]:
+            for field in list(default_answer.keys()):
                 if answer.get(field, "-") != "-":
                     metadata_dict[field] = answer[field]
 
@@ -238,7 +239,7 @@ class DocumentsDataExtractor:
         doc_folder_path: os.PathLike,
         figures_saving_path: os.PathLike,
         doc_url: str = None,
-        extract_metadata_bool: bool = False,
+        metadata_extraction_type: Union[bool, Literal["interview", "document", "none"]] = "none",
         extract_figures_bool: bool = False,
     ) -> pd.DataFrame:
         """Extract information from a document."""
@@ -289,16 +290,31 @@ class DocumentsDataExtractor:
             "date": "Document Publishing Date",
             "author": "Document Source",
             "title": "Document Title",
+            "interviewee": "Interviewee",
+            "type": "Document Type",
         }
 
-        if extract_metadata_bool:
-            default_answer = {
-                "date": "-",
-                "author": "-",
-                "title": "-",
-            }
+        if metadata_extraction_type != "none" or metadata_extraction_type:
+            if metadata_extraction_type is True:
+                metadata_extraction_type = "document"
+            if metadata_extraction_type == "interview":
+                extraction_prompt = interview_metadata_extraction_prompt
+                default_answer = {
+                    "date": "-",
+                    "author": "-",
+                    "title": "-",
+                    "interviewee": "-",
+                }
+            else:
+                extraction_prompt = metadata_extraction_prompt
+                default_answer = {
+                    "date": "-",
+                    "author": "-",
+                    "title": "-",
+                    "type": "-",
+                }
             metadata = self.extract_metadata(
-                metadata_pages_paths, default_answer=default_answer
+                metadata_pages_paths, extraction_prompt, default_answer=default_answer
             )
             for field, data in metadata.items():
                 project_extracted_text[field_to_final_name[field]] = str(data)
