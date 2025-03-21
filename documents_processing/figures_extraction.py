@@ -105,6 +105,7 @@ def extract_figures(
     saved_pages_images_path: os.PathLike,
     pdf_file_path: os.PathLike,
     pdf_saved_name: str,
+    metadata_extraction_type: str,
     min_confidence: float = 0.2,
 ) -> Dict[str, List[str]]:
 
@@ -118,7 +119,10 @@ def extract_figures(
     n_pages = len(extracted_images)
     
     # i want to extract metadata from the first 3 pages and last 2 pages
-    relevant_pages_for_metadata_extraction = sorted(list(set(list(range(min(3, n_pages))) + list(range(max(3, n_pages-2), n_pages)))))
+    if metadata_extraction_type == "document":
+        relevant_pages_for_metadata_extraction = sorted(list(set(list(range(min(3, n_pages))) + list(range(max(3, n_pages-2), n_pages)))))
+    else:
+        relevant_pages_for_metadata_extraction = sorted(list(set(list(range(min(2, n_pages))))) + list(range(max(2, n_pages-1), n_pages)))
 
     figures_paths = defaultdict(list)
     metadata_pages_paths = []

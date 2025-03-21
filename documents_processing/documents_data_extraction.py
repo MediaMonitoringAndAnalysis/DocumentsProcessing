@@ -32,7 +32,7 @@ inference_pipelines = {
         "api_key": os.getenv("openai_api_key"),
     },
     "Ollama": {
-        "model_name": "llava:7b-v1.6-mistral-q4_K_M",
+        "model_name": "gemma3:12b-it-q4_K_M",
         "inference_pipeline_name": "Ollama",
         "api_key": None,
     },
@@ -279,6 +279,7 @@ class DocumentsDataExtractor:
                 saved_pages_images_path=figures_saving_path,
                 pdf_file_path=doc_file_path,
                 pdf_saved_name=file_name,
+                metadata_extraction_type=metadata_extraction_type,
             )
             if extract_figures_bool:
                 images_extracted_text = self._get_images_description(figures_paths)

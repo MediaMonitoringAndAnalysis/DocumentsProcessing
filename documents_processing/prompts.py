@@ -30,20 +30,21 @@ If you cannot find any of the information, leave the field empty ('-').
 Extract the information yourself and do not rely on any external library."""
 
 
-interview_metadata_extraction_prompt = """This is a page of a document. I want to extract the document metadata from this page.
+interview_metadata_extraction_prompt = """This is a page of an interview document. I want to extract the document metadata from this page.
 Extract the document publishing date, author organisations and the document title. 
 Return only the results in a dictionnary JSON response without unnecessary spaces in the following format:
 {
     "date": dd/mm/yyyy: the data when the interview is performed,
     "author": List[str]: The author organisations of the document,
     "title": str: The title of the document,
-    "interviewee": List[Dict[str, str]]: The interviewees in the document with keys:
+    "interviewee": List[Dict[str, str]]: The people explicitly mentioned in the document with keys:
         - "name": str: The name of the interviewee,
         - "role": str: The role of the interviewee,
         - "organization": str: The organization of the interviewee,
         - "location": str: The location of the interviewee (country level),
 If you cannot find any of the information, leave the field empty ('-').
-Extract the information yourself and do not rely on any external library."""
+Extract the information yourself and do not rely on any external library. 
+If you are not sure about an answer, return it anyways. High recall is more important than high precision."""
 
 
 system_prompts = {
