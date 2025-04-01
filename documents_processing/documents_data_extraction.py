@@ -275,7 +275,7 @@ class DocumentsDataExtractor:
         project_extracted_text = pd.concat([project_extracted_text, df_raw_text])
 
         with SuppressPrint():
-            figures_paths, metadata_pages_paths = extract_figures(
+            figures_paths, metadata_pages_paths, n_pages = extract_figures(
                 saved_pages_images_path=figures_saving_path,
                 pdf_file_path=doc_file_path,
                 pdf_saved_name=file_name,
@@ -320,7 +320,6 @@ class DocumentsDataExtractor:
             for field, data in metadata.items():
                 project_extracted_text[field_to_final_name[field]] = str(data)
                 
-            number_of_pages = len(metadata_pages_paths)
-            project_extracted_text["Number of Pages"] = number_of_pages
+            project_extracted_text["Number of Pages"] = n_pages
 
         return project_extracted_text

@@ -184,7 +184,7 @@ def extract_figures(
 
                 figures_paths[one_class].append(one_fig_path)
 
-    return figures_paths, metadata_pages_paths
+    return figures_paths, metadata_pages_paths, n_pages
 
 
 def _extract_first_page_to_base64(pdf_path):
