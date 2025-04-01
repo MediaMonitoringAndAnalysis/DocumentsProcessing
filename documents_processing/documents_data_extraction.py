@@ -319,5 +319,8 @@ class DocumentsDataExtractor:
             )
             for field, data in metadata.items():
                 project_extracted_text[field_to_final_name[field]] = str(data)
+                
+            number_of_pages = len(metadata_pages_paths)
+            project_extracted_text["Number of Pages"] = number_of_pages
 
         return project_extracted_text
