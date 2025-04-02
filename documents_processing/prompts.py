@@ -25,6 +25,7 @@ Return only the results in a dictionnary JSON response without unnecessary space
     "author": List[str]: The author organisations,
     "title": str: The title of the document,
     "type": str: The type of the document: Literal = ["Analysis", "Appeal", "Assessment", "Evaluation and Lessons Learned", "Infographic", "Manual and Guideline", "Map", "News and Press Release", "Other", "Situation Report", "UN Document"]
+    "primary_country": str: The primary country of the document,
 } 
 If you cannot find any of the information, leave the field empty ('-').
 Extract the information yourself and do not rely on any external library."""

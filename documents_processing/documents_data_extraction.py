@@ -293,6 +293,7 @@ class DocumentsDataExtractor:
             "title": "Document Title",
             "interviewee": "Interviewee",
             "type": "Document Type",
+            "primary_country": "Primary Country",
         }
 
         if metadata_extraction_type != "none" or metadata_extraction_type:
@@ -313,6 +314,7 @@ class DocumentsDataExtractor:
                     "author": "-",
                     "title": "-",
                     "type": "-",
+                    "primary_country": "-",
                 }
             metadata = self.extract_metadata(
                 metadata_pages_paths, extraction_prompt, default_answer=default_answer
