@@ -321,5 +321,7 @@ class DocumentsDataExtractor:
                 project_extracted_text[field_to_final_name[field]] = str(data)
                 
             project_extracted_text["Number of Pages"] = n_pages
+            
+        project_extracted_text["File Name"] = file_name
 
         return project_extracted_text
