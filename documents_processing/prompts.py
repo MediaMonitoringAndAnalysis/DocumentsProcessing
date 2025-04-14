@@ -30,7 +30,6 @@ Return only the results in a dictionnary JSON response without unnecessary space
 If you cannot find any of the information, leave the field empty ('-').
 Extract the information yourself and do not rely on any external library."""
 
-
 interview_metadata_extraction_prompt = """This is a page of an interview document. I want to extract the document metadata from this page.
 Extract the document publishing date, author organisations and the document title. 
 Return only the results in a dictionnary JSON response without unnecessary spaces in the following format:
@@ -42,7 +41,10 @@ Return only the results in a dictionnary JSON response without unnecessary space
         - "name": str: The name of the interviewee,
         - "role": str: The role of the interviewee,
         - "organization": str: The organization of the interviewee,
+        - "gender": str: The gender of the interviewee (M or F, or M-F if gender neutral pronoun),
         - "location": str: The location of the interviewee (country level),
+        - "location_type": str: The type of location (global level / field-level / country-level),
+        - "organisation_type": str: The type of organization (Government / International Organisation / Non Governmental Organisation / Media / Operating Partner / UN agency / Donor / External / Other),
 If you cannot find any of the information, leave the field empty ('-').
 Extract the information yourself and do not rely on any external library. 
 If you are not sure about an answer, return it anyways. High recall is more important than high precision."""
