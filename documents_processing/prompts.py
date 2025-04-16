@@ -5,7 +5,7 @@ Make the text as detailed as possible. Use a descriptive language and only menti
 The text should be in the form of self-contained paragraphs, and should not be a list of bullet points. Do not provide any general description of the image or introductory text. Instead, directly present the information.
 When providing information, present it without reffering the image. For example, instead of saying "The age and gender breakdown of the population indicates that 1% are aged 60 years or above", say "1% are aged 60 years or above".
 If the image does not contain any relevant information for the humanitarian report (faces, landscapes, logos, etc.), return an empty string ('-').
-Return all text in English.
+Return all text in the language of the image, or in English if the language is not found.
 """
 
 table_description_prompt = """
@@ -14,7 +14,7 @@ More specificaly, all numbers, specific populations, locations, and any other re
 Make the text as detailed as possible. Use a descriptive language and only mention the information that is present in the table as informative text and information.
 The text should be in the form of self-contained paragraphs, and should not be a list of bullet points. Do not provide any general description of the table or introductory text. Instead, directly present the information.
 When providing information, present it without reffering the table. For example, instead of saying "The age and gender breakdown of the population indicates that 1% are aged 60 years or above", say "1% are aged 60 years or above".
-Return all text in English.
+Return all text in the language of the table, or in English if the language is not found.
 """
 
 metadata_extraction_prompt = """This is a page of a document. I want to extract the document metadata from this page.
@@ -39,12 +39,12 @@ Return only the results in a dictionnary JSON response without unnecessary space
     "title": str: The title of the document,
     "interviewee": List[Dict[str, str]]: The people explicitly mentioned in the document with keys:
         - "name": str: The name of the interviewee,
-        - "role": str: The role of the interviewee,
         - "organization": str: The organization of the interviewee,
-        - "gender": str: The gender of the interviewee (M or F, or M-F if gender neutral pronoun),
+        - "role": str: The role of the interviewee in the organization,
+        - "organisation_type": str: The type of organization (`Government` / `International Organisation` / `Non Governmental Organisation` / `Media` / `Operating Partner` / `UN agency` / `Donor` / `External` / `Other`),
+        - "gender": str: The gender of the interviewee (`M` or `F`, or `M-F` if gender neutral pronoun),
         - "location": str: The location of the interviewee (country level),
-        - "location_type": str: The type of location (global level / field-level / country-level),
-        - "organisation_type": str: The type of organization (Government / International Organisation / Non Governmental Organisation / Media / Operating Partner / UN agency / Donor / External / Other),
+        - "location_type": str: The type of location (`global level` / `field-level` / `country-level`),
 If you cannot find any of the information, leave the field empty ('-').
 Extract the information yourself and do not rely on any external library. 
 If you are not sure about an answer, return it anyways. High recall is more important than high precision."""
