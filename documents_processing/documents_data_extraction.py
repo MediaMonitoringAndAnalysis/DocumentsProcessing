@@ -241,6 +241,7 @@ class DocumentsDataExtractor:
         doc_url: str = None,
         metadata_extraction_type: Union[bool, Literal["interview", "document", "none"]] = "none",
         extract_figures_bool: bool = False,
+        relevant_pages_for_metadata_extraction: Optional[List[int]] = None,
     ) -> pd.DataFrame:
         """Extract information from a document."""
         # file_name = _get_first_n_characters(file_name)
@@ -280,6 +281,7 @@ class DocumentsDataExtractor:
                 pdf_file_path=doc_file_path,
                 pdf_saved_name=file_name,
                 metadata_extraction_type=metadata_extraction_type,
+                relevant_pages_for_metadata_extraction=relevant_pages_for_metadata_extraction,
             )
             if extract_figures_bool:
                 images_extracted_text = self._get_images_description(figures_paths)

@@ -2,7 +2,7 @@ from pdf2image import convert_from_path
 import numpy as np
 from collections import defaultdict
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional
 import cv2
 import supervision as sv  # pip install supervision
 from ultralytics import YOLO
@@ -107,6 +107,7 @@ def extract_figures(
     pdf_saved_name: str,
     metadata_extraction_type: str,
     min_confidence: float = 0.2,
+    relevant_pages_for_metadata_extraction: Optional[List[int]] = None,
 ) -> Dict[str, List[str]]:
 
     one_file_saved_images_path = os.path.join(
@@ -118,11 +119,11 @@ def extract_figures(
     
     n_pages = len(extracted_images)
     
-    # i want to extract metadata from the first 3 pages and last 2 pages
-    if metadata_extraction_type == "document":
-        relevant_pages_for_metadata_extraction = sorted(list(set(list(range(min(3, n_pages))) + list(range(max(3, n_pages-2), n_pages)))))
-    else:
-        relevant_pages_for_metadata_extraction = sorted(list(set(list(range(min(2, n_pages))))) + list(range(max(2, n_pages-1), n_pages)))
+    if relevant_pages_for_metadata_extraction is None:
+        if metadata_extraction_type == "document":
+            relevant_pages_for_metadata_extraction = sorted(list(set(list(range(min(3, n_pages))) + list(range(max(3, n_pages-2), n_pages)))))
+        else:
+            relevant_pages_for_metadata_extraction = sorted(list(set(list(range(min(2, n_pages))))) + list(range(max(2, n_pages-1), n_pages)))
 
     figures_paths = defaultdict(list)
     metadata_pages_paths = []
