@@ -39,7 +39,7 @@ inference_pipelines = {
 }
 
 
-def _ocr_handwritten_pdf(file_path) -> List[str]:
+def _ocr_handwritten_pdf(file_path: str) -> Dict[str, str]:
     """
     Opens a PDF file and initializes an empty list to hold the OCR-extracted text.
     Iterates through each page of the PDF, rendering it to an image.
@@ -49,7 +49,7 @@ def _ocr_handwritten_pdf(file_path) -> List[str]:
     """
     # Open the PDF
     doc = fitz.open(file_path)
-    text = []
+    text = {}
 
     for page_num in range(len(doc)):
         # Get the page
@@ -61,7 +61,7 @@ def _ocr_handwritten_pdf(file_path) -> List[str]:
         image = Image.open(io.BytesIO(image_bytes))
 
         # Use Tesseract to do OCR on the image
-        text.append(pytesseract.image_to_string(image))
+        text[f"page {page_num + 1}"] = pytesseract.image_to_string(image)
 
     doc.close()
     return text
@@ -102,16 +102,16 @@ class DocumentsDataExtractor:
 
         return final_entries
 
-    def _extract_pdf_text(self, filepath: str) -> List[str]:
+    def _extract_pdf_text(self, filepath: str) -> Dict[str, str]:
         """Extract text from a PDF document."""
         doc = fitz.open(filepath)
-        doc_text = []
+        doc_text = {}
         for page in doc:
             text_blocks = page.get_textpage().extractBLOCKS()
             clean_text = [block[4] for block in text_blocks]
             clean_text = self._clean_entries(clean_text)
-            doc_text.extend(clean_text)
-        return " ".join(doc_text)
+            doc_text[f"page {page.number + 1}"] = " ".join(clean_text)
+        return doc_text
 
     def _get_images_description(
         self, figures_paths: Dict[str, List[str]]
@@ -119,6 +119,7 @@ class DocumentsDataExtractor:
         """Generate image descriptions and update extracted text."""
         figs_df = pd.DataFrame()
         prompts = []
+        pages = []
         for fig_type, fig_paths in figures_paths.items():
             for fig_path in fig_paths:
                 one_fig_metadata = {
@@ -153,6 +154,10 @@ class DocumentsDataExtractor:
                         },
                     ]
                 prompts.append(one_fig_prompt)
+                
+                file_name = fig_path.split('/')[-1].split('.')[0]
+                page_number = int(file_name.split('_')[1]) + 1
+                pages.append(f"page {page_number}")
 
         if len(prompts) > 0:
             answers = get_answers(
@@ -165,7 +170,7 @@ class DocumentsDataExtractor:
                 show_progress_bar=False,
             )
 
-            figs_df["text"] = answers
+            figs_df["text"] = [{p: a} for p, a in zip(pages, answers)]
         return figs_df
 
     def extract_metadata(
@@ -173,7 +178,7 @@ class DocumentsDataExtractor:
         metadata_pages_paths: List[os.PathLike],
         extraction_prompt: str,
         default_answer: Dict[str, str],
-    ) -> dict:
+    ) -> Dict[str, str]:
         """Extract metadata from a PDF file."""
 
         metadata_dict = default_answer
@@ -238,12 +243,27 @@ class DocumentsDataExtractor:
         file_name: str,
         doc_folder_path: os.PathLike,
         figures_saving_path: os.PathLike,
-        doc_url: str = None,
+        doc_url: Optional[str] = None,
         metadata_extraction_type: Union[bool, Literal["interview", "document", "none"]] = "none",
         extract_figures_bool: bool = False,
         relevant_pages_for_metadata_extraction: Optional[List[int]] = None,
+        return_original_pages_numbers: bool = False,
     ) -> pd.DataFrame:
-        """Extract information from a document."""
+        """Extract information from a document.
+        
+        Args:
+            file_name (str): Name of the document file to process.
+            doc_folder_path (os.PathLike): Path to the folder containing the document.
+            figures_saving_path (os.PathLike): Path where extracted figures will be saved.
+            doc_url (Optional[str], optional): URL to download the document if not found locally. Defaults to None.
+            metadata_extraction_type (Union[bool, Literal["interview", "document", "none"]], optional): Type of metadata to extract. Defaults to "none".
+            extract_figures_bool (bool, optional): Whether to extract figures from the document. Defaults to False.
+            relevant_pages_for_metadata_extraction (Optional[List[int]], optional): Specific pages to extract metadata from. Defaults to None.
+            return_original_pages_numbers (bool, optional): Whether to return text with original page numbers. Defaults to False.
+            
+        Returns:
+            pd.DataFrame: DataFrame containing extracted information from the document.
+        """
         # file_name = _get_first_n_characters(file_name)
         project_extracted_text = pd.DataFrame(
             columns=["text", "Entry Type", "entry_fig_path"]
@@ -260,9 +280,9 @@ class DocumentsDataExtractor:
             convert_to_pdf(doc_file_path, converted_pdf_path)
             doc_file_path = converted_pdf_path
 
-        extracted_text = self._extract_pdf_text(doc_file_path)
+        extracted_text: Dict[str, str] = self._extract_pdf_text(doc_file_path)
         if len(str(extracted_text)) < 10:
-            extracted_text = _ocr_handwritten_pdf(doc_file_path)
+            extracted_text: Dict[str, str] = _ocr_handwritten_pdf(doc_file_path)
         df_raw_text = pd.DataFrame(
             [
                 {
@@ -288,7 +308,10 @@ class DocumentsDataExtractor:
                 project_extracted_text = pd.concat(
                     [project_extracted_text, images_extracted_text]
                 )
-
+                
+        if not return_original_pages_numbers:
+            project_extracted_text["text"] = project_extracted_text["text"].apply(lambda x: " ".join(list(x.values())))
+            
         field_to_final_name = {
             "date": "Document Publishing Date",
             "author": "Document Source",
