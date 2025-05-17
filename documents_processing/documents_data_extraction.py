@@ -18,7 +18,11 @@ from documents_processing.utils import (
     _download_pdf,
     encode_image,
 )
-from documents_processing.prompts import system_prompts, metadata_extraction_prompt, interview_metadata_extraction_prompt
+from documents_processing.prompts import (
+    system_prompts,
+    metadata_extraction_prompt,
+    interview_metadata_extraction_prompt,
+)
 from llm_multiprocessing_inference import get_answers
 from PIL import Image
 import pytesseract
@@ -83,9 +87,13 @@ class DocumentsDataExtractor:
             self.inference_pipeline_name = inference_pipelines[inference_pipeline_name][
                 "inference_pipeline_name"
             ]
-            self.model_name = inference_pipelines[inference_pipeline_name]["model_name"] or model_name
-            self.api_key = inference_pipelines[inference_pipeline_name]["api_key"] or api_key
-        
+            self.model_name = (
+                inference_pipelines[inference_pipeline_name]["model_name"] or model_name
+            )
+            self.api_key = (
+                inference_pipelines[inference_pipeline_name]["api_key"] or api_key
+            )
+
         self.punct_extractor = PunctCapSegModelONNX.from_pretrained(punct_model_name)
 
     def _clean_entries(self, entries: List[str]) -> List[str]:
@@ -154,9 +162,9 @@ class DocumentsDataExtractor:
                         },
                     ]
                 prompts.append(one_fig_prompt)
-                
-                file_name = fig_path.split('/')[-1].split('.')[0]
-                page_number = int(file_name.split('_')[1]) + 1
+
+                file_name = fig_path.split("/")[-1].split(".")[0]
+                page_number = int(file_name.split("_")[1]) + 1
                 pages.append(f"page {page_number}")
 
         if len(prompts) > 0:
@@ -182,7 +190,7 @@ class DocumentsDataExtractor:
         """Extract metadata from a PDF file."""
 
         metadata_dict = default_answer
-        
+
         for one_page_path in metadata_pages_paths:
             base64_image = encode_image(one_page_path)
 
@@ -226,7 +234,7 @@ class DocumentsDataExtractor:
                     show_progress_bar=False,
                 )[0]
             except Exception as e:
-                print(f"Error in inference: {e}")
+                print(f"Error in inference in metadata extraction: {e}")
                 answer = default_answer
 
             for field in list(default_answer.keys()):
@@ -244,13 +252,15 @@ class DocumentsDataExtractor:
         doc_folder_path: os.PathLike,
         figures_saving_path: os.PathLike,
         doc_url: Optional[str] = None,
-        metadata_extraction_type: Union[bool, Literal["interview", "document", "none"]] = "none",
+        metadata_extraction_type: Union[
+            bool, Literal["interview", "document", "none"]
+        ] = "none",
         extract_figures_bool: bool = False,
         relevant_pages_for_metadata_extraction: Optional[List[int]] = None,
         return_original_pages_numbers: bool = False,
     ) -> pd.DataFrame:
         """Extract information from a document.
-        
+
         Args:
             file_name (str): Name of the document file to process.
             doc_folder_path (os.PathLike): Path to the folder containing the document.
@@ -260,7 +270,7 @@ class DocumentsDataExtractor:
             extract_figures_bool (bool, optional): Whether to extract figures from the document. Defaults to False.
             relevant_pages_for_metadata_extraction (Optional[List[int]], optional): Specific pages to extract metadata from. Defaults to None.
             return_original_pages_numbers (bool, optional): Whether to return text with original page numbers. Defaults to False.
-            
+
         Returns:
             pd.DataFrame: DataFrame containing extracted information from the document.
         """
@@ -295,13 +305,17 @@ class DocumentsDataExtractor:
                 }
             ]
         )
-        
+
         # get the number of pages
         n_pages = len(extracted_text)
 
         project_extracted_text = pd.concat([project_extracted_text, df_raw_text])
 
-        if extract_figures_bool or metadata_extraction_type != "none" or metadata_extraction_type:
+        if self.inference_pipeline_name is not None and (
+            extract_figures_bool
+            or metadata_extraction_type != "none"
+            or metadata_extraction_type
+        ):
             with SuppressPrint():
                 figures_paths, metadata_pages_paths = extract_figures(
                     saved_pages_images_path=figures_saving_path,
@@ -315,10 +329,12 @@ class DocumentsDataExtractor:
                     project_extracted_text = pd.concat(
                         [project_extracted_text, images_extracted_text]
                     )
-                
+
         if not return_original_pages_numbers:
-            project_extracted_text["text"] = project_extracted_text["text"].apply(lambda x: " ".join(list(x.values())))
-            
+            project_extracted_text["text"] = project_extracted_text["text"].apply(
+                lambda x: " ".join(list(x.values()))
+            )
+
         field_to_final_name = {
             "date": "Document Publishing Date",
             "author": "Document Source",
@@ -328,7 +344,9 @@ class DocumentsDataExtractor:
             "primary_country": "Primary Country",
         }
 
-        if metadata_extraction_type != "none" or metadata_extraction_type:
+        if self.inference_pipeline_name is not None and (
+            metadata_extraction_type != "none" or metadata_extraction_type
+        ):
             if metadata_extraction_type is True:
                 metadata_extraction_type = "document"
             if metadata_extraction_type == "interview":
@@ -353,9 +371,9 @@ class DocumentsDataExtractor:
             )
             for field, data in metadata.items():
                 project_extracted_text[field_to_final_name[field]] = str(data)
-                
+
             project_extracted_text["Number of Pages"] = n_pages
-            
+
         project_extracted_text["File Name"] = file_name
 
         return project_extracted_text
