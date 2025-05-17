@@ -70,7 +70,7 @@ def _ocr_handwritten_pdf(file_path: str) -> Dict[str, str]:
 class DocumentsDataExtractor:
     def __init__(
         self,
-        inference_pipeline_name: Literal["Ollama", "OpenAI"],
+        inference_pipeline_name: Optional[Literal["Ollama", "OpenAI"]] = None,
         punct_model_name: str = "1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase",
         model_name: Optional[str] = None,
         api_key: Optional[str] = None,
@@ -79,9 +79,10 @@ class DocumentsDataExtractor:
             self.model_name = inference_pipelines[inference_pipeline_name]["model_name"]
         else:
             self.model_name = model_name
-        self.inference_pipeline_name = inference_pipelines[inference_pipeline_name][
-            "inference_pipeline_name"
-        ]
+        if inference_pipeline_name is None:
+            self.inference_pipeline_name = inference_pipelines[inference_pipeline_name][
+                "inference_pipeline_name"
+            ]
         if api_key is None:
             self.api_key = inference_pipelines[inference_pipeline_name]["api_key"]
         else:
