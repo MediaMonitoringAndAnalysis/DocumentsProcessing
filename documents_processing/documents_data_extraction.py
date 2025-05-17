@@ -276,7 +276,10 @@ class DocumentsDataExtractor:
 
         # Convert to PDF if the file is not a PDF
         if not doc_file_path.lower().endswith(".pdf"):
-            converted_pdf_path = os.path.splitext(doc_file_path)[0] + ".pdf"
+            doc_folder_path = os.path.dirname(doc_file_path) + "_converted"
+            os.makedirs(doc_folder_path, exist_ok=True)
+            base_name = ".".join(file_name.split(".")[:-1])
+            converted_pdf_path = os.path.join(doc_folder_path, f"{base_name}.pdf")
             convert_to_pdf(doc_file_path, converted_pdf_path)
             doc_file_path = converted_pdf_path
 
@@ -298,7 +301,7 @@ class DocumentsDataExtractor:
 
         project_extracted_text = pd.concat([project_extracted_text, df_raw_text])
 
-        if extract_figures_bool or metadata_extraction_type != "none" or metadata_extraction_typ:
+        if extract_figures_bool or metadata_extraction_type != "none" or metadata_extraction_type:
             with SuppressPrint():
                 figures_paths, metadata_pages_paths = extract_figures(
                     saved_pages_images_path=figures_saving_path,
