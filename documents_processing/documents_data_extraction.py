@@ -281,7 +281,7 @@ class DocumentsDataExtractor:
             doc_file_path = converted_pdf_path
 
         extracted_text: Dict[str, str] = self._extract_pdf_text(doc_file_path)
-        if len(str(extracted_text)) < 10:
+        if len(" ".join(list(extracted_text.values()))) < 10:
             extracted_text: Dict[str, str] = _ocr_handwritten_pdf(doc_file_path)
         df_raw_text = pd.DataFrame(
             [
@@ -292,22 +292,26 @@ class DocumentsDataExtractor:
                 }
             ]
         )
+        
+        # get the number of pages
+        n_pages = len(extracted_text)
 
         project_extracted_text = pd.concat([project_extracted_text, df_raw_text])
 
-        with SuppressPrint():
-            figures_paths, metadata_pages_paths, n_pages = extract_figures(
-                saved_pages_images_path=figures_saving_path,
-                pdf_file_path=doc_file_path,
-                pdf_saved_name=file_name,
-                metadata_extraction_type=metadata_extraction_type,
-                relevant_pages_for_metadata_extraction=relevant_pages_for_metadata_extraction,
-            )
-            if extract_figures_bool:
-                images_extracted_text = self._get_images_description(figures_paths)
-                project_extracted_text = pd.concat(
-                    [project_extracted_text, images_extracted_text]
+        if extract_figures_bool or metadata_extraction_type != "none" or metadata_extraction_typ:
+            with SuppressPrint():
+                figures_paths, metadata_pages_paths = extract_figures(
+                    saved_pages_images_path=figures_saving_path,
+                    pdf_file_path=doc_file_path,
+                    pdf_saved_name=file_name,
+                    metadata_extraction_type=metadata_extraction_type,
+                    relevant_pages_for_metadata_extraction=relevant_pages_for_metadata_extraction,
                 )
+                if extract_figures_bool:
+                    images_extracted_text = self._get_images_description(figures_paths)
+                    project_extracted_text = pd.concat(
+                        [project_extracted_text, images_extracted_text]
+                    )
                 
         if not return_original_pages_numbers:
             project_extracted_text["text"] = project_extracted_text["text"].apply(lambda x: " ".join(list(x.values())))

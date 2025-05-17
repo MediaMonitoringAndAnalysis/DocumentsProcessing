@@ -118,7 +118,6 @@ def extract_figures(
     extracted_images = convert_from_path(pdf_file_path, dpi=300, first_page=1)
     
     n_pages = len(extracted_images)
-    
     if relevant_pages_for_metadata_extraction is None:
         if metadata_extraction_type == "document":
             relevant_pages_for_metadata_extraction = sorted(list(set(list(range(min(3, n_pages))) + list(range(max(3, n_pages-2), n_pages)))))
@@ -185,7 +184,7 @@ def extract_figures(
 
                 figures_paths[one_class].append(one_fig_path)
 
-    return figures_paths, metadata_pages_paths, n_pages
+    return figures_paths, metadata_pages_paths
 
 
 def _extract_first_page_to_base64(pdf_path):
