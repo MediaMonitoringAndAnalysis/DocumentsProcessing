@@ -80,6 +80,8 @@ class DocumentsDataExtractor:
         else:
             self.model_name = model_name
         if inference_pipeline_name is None:
+            self.inference_pipeline_name = None
+        else:
             self.inference_pipeline_name = inference_pipelines[inference_pipeline_name][
                 "inference_pipeline_name"
             ]
