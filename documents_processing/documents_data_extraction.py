@@ -75,20 +75,17 @@ class DocumentsDataExtractor:
         model_name: Optional[str] = None,
         api_key: Optional[str] = None,
     ):
-        if model_name is None:
-            self.model_name = inference_pipelines[inference_pipeline_name]["model_name"]
-        else:
-            self.model_name = model_name
         if inference_pipeline_name is None:
             self.inference_pipeline_name = None
+            self.model_name = None
+            self.api_key = None
         else:
             self.inference_pipeline_name = inference_pipelines[inference_pipeline_name][
                 "inference_pipeline_name"
             ]
-        if api_key is None:
-            self.api_key = inference_pipelines[inference_pipeline_name]["api_key"]
-        else:
-            self.api_key = api_key
+            self.model_name = inference_pipelines[inference_pipeline_name]["model_name"] or model_name
+            self.api_key = inference_pipelines[inference_pipeline_name]["api_key"] or api_key
+        
         self.punct_extractor = PunctCapSegModelONNX.from_pretrained(punct_model_name)
 
     def _clean_entries(self, entries: List[str]) -> List[str]:
