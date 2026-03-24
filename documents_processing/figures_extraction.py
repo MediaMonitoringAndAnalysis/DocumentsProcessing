@@ -10,8 +10,6 @@ from PIL import Image
 import base64
 import fitz
 from io import BytesIO
-from ultralytics import YOLOv10
-
 
 needed_features = ["Table", "Picture"]
 
