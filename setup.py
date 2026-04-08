@@ -36,7 +36,10 @@ setup(
         "ultralytics",
         "onnxruntime",
         "punctuators",
-        "git+https://github.com/MediaMonitoringAndAnalysis/llm_multiprocessing_inference.git",
+        "llm_multiprocessing_inference",
+    ],
+    dependency_links=[
+        "git+https://github.com/MediaMonitoringAndAnalysis/llm_multiprocessing_inference.git#egg=llm_multiprocessing_inference",
     ],
     extras_require={
         "dev": [
