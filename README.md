@@ -1,120 +1,312 @@
 # DocumentsProcessing
-A Python library for extracting and processing information from PDF documents using advanced vision-language models.
 
-## Features
-- Extract text content from PDF documents
-- Extract figures and images with captions
-- Extract metadata (title, authors, publication date, etc.)
-- Process documents using various LLM backends (OpenAI, Ollama)
-- Command-line interface for easy document processing
-- Flask API for integration with web applications
+A Python library for extracting text, figures, tables, and metadata from PDF and Office documents using vision-language models.
+
+## Processing Pipeline
+
+```mermaid
+flowchart LR
+    A([📄 Input\nPDF / DOCX / PPTX]) --> B[Convert to PDF\nLibreOffice]
+    B --> C{Has\nselectable\ntext?}
+    C -- Yes --> D[PyMuPDF\nText Extraction]
+    C -- No --> E[Tesseract\nOCR]
+    D --> F[Punctuation &\nSentence Cleanup]
+    E --> F
+    F --> G([📝 Text rows])
+
+    A --> H[pdf2image\nPage Render]
+    H --> I[YOLOv10\nLayout Detection]
+    I --> J{Region\nType}
+    J -- Picture --> K[Face Removal\nOpenCV]
+    J -- Table --> K
+    K --> L[VLM Caption\nOpenAI / Ollama]
+    L --> M([🖼️ Figure / Table rows])
+
+    H --> N[First / Last Pages]
+    N --> O[VLM Metadata\nExtraction]
+    O --> P([🏷️ Metadata columns])
+
+    G & M & P --> Q[(pandas\nDataFrame)]
+```
+
+## Output Schema
+
+```mermaid
+erDiagram
+    DOCUMENT_ROW {
+        string text "Extracted content (text or VLM caption)"
+        string Entry_Type "PDF Text | PDF Picture | PDF Table"
+        string entry_fig_path "Path to cropped figure/table image, '-' for text rows"
+        string File_Name "Original document filename"
+    }
+    METADATA_COLS {
+        string Document_Title "Extracted by VLM from cover pages"
+        string Document_Source "Author organisations"
+        string Document_Publishing_Date "dd/mm/yyyy"
+        string Document_Type "Analysis | Situation Report | Map | ..."
+        string Primary_Country "Primary country of the document"
+        int Number_of_Pages "Total page count"
+    }
+    INTERVIEW_EXTRA {
+        list Interviewee "List of interviewee dicts (name, org, role, gender, location ...)"
+    }
+    DOCUMENT_ROW ||--o{ METADATA_COLS : "when metadata_extraction_type != none"
+    DOCUMENT_ROW ||--o| INTERVIEW_EXTRA : "when metadata_extraction_type = interview"
+```
+
+### Entry types per row
+
+| `Entry Type`  | `text`                                | `entry_fig_path`         |
+|---------------|---------------------------------------|--------------------------|
+| `PDF Text`    | Full document text (all pages joined) | `-`                      |
+| `PDF Picture` | VLM description of the figure         | `/path/to/page_N_0.png`  |
+| `PDF Table`   | VLM description of the table          | `/path/to/page_N_0.png`  |
+
+---
 
 ## Installation
 
-### Dependencies
+**Prerequisite** — [LibreOffice](https://www.libreoffice.org) must be installed to process `.docx`/`.doc`/`.pptx` files.
 
-<!-- 1. Install the base requirements:
 ```bash
-pip install pdf2image numpy opencv-python pillow torch transformers requests PyMuPDF pandas tqdm nltk
-``` -->
+# From PyPI-compatible source
+pip install git+https://github.com/MediaMonitoringAndAnalysis/DocumentsProcessing.git
 
-<!-- 2. Install YOLOv10 for document layout analysis:
-```bash
-pip install -q git+https://github.com/THU-MIG/yolov10.git
-pip install -q supervision
-```
-
-3. Download the YOLOv10 pre-trained weights:
-```bash
-wget https://github.com/moured/YOLOv10-Document-Layout-Analysis/releases/download/doclaynet_weights/yolov10x_best.pt
-mv yolov10x_best.pt models/yolov10x_best.pt
-``` -->
-
-1. Download [Libre Office](https://www.libreoffice.org) to convert word and pptx files to pdf.
-
-2. Install the project:
-* Install the project from the repository:
-```bash
+# Or editable install from a local clone
 git clone https://github.com/MediaMonitoringAndAnalysis/DocumentsProcessing.git
 cd DocumentsProcessing
 pip install -e .
 ```
-* Install with pip:
-```bash
-pip install git+https://github.com/MediaMonitoringAndAnalysis/DocumentsProcessing.git
+
+---
+
+## Supported Formats
+
+| Format | Extension | Converter |
+|--------|-----------|-----------|
+| PDF    | `.pdf`    | Native    |
+| Word   | `.docx` `.doc` | LibreOffice |
+| PowerPoint | `.pptx` | LibreOffice |
+
+---
+
+## Inference Backends
+
+```mermaid
+graph LR
+    subgraph Backends
+        A["☁️ OpenAI\ngpt-4o-mini"] 
+        B["🏠 Ollama\ngemma3:12b-it-q4_K_M"]
+    end
+    A & B --> C[VLM tasks]
+    C --> D[Figure description]
+    C --> E[Table description]
+    C --> F[Metadata extraction]
 ```
+
+| Backend  | Model                    | Requires                    |
+|----------|--------------------------|-----------------------------|
+| `OpenAI` | `gpt-4o-mini`            | `OPENAI_API_KEY` env var    |
+| `Ollama` | `gemma3:12b-it-q4_K_M`  | Local [Ollama](https://ollama.ai) server |
+
+---
 
 ## Usage
 
+### Python
+
 ```python
 import os
-import argparse
 from documents_processing import DocumentsDataExtractor
 
-inference_pipeline_name = Literal["Ollama", "OpenAI"]
+extractor = DocumentsDataExtractor("OpenAI")   # or "Ollama"
 
-documents_data_extractor = DocumentsDataExtractor(
-    inference_pipeline_name
+results_df = extractor(
+    file_name="report.pdf",
+    doc_folder_path="data/original_docs",
+    figures_saving_path="data/figures",
+    metadata_extraction_type="document",   # "document" | "interview" | "none"
+    extract_figures_bool=True,
 )
 
-# Define paths
-base_path = "data"
-pdf_folder = os.path.join(base_path, "original_docs")
-figures_folder = os.path.join(base_path, "figures")
-
-# Create necessary directories
-os.makedirs(pdf_folder, exist_ok=True)
-os.makedirs(figures_folder, exist_ok=True)
-
-# Test PDF file
-pdf_filename = "test.pdf"
-
-# Extract information
-results_df = documents_data_extractor(
-    file_name=pdf_filename,
-    doc_folder_path=pdf_folder,
-    extract_metadata_bool=True,
-    extract_figures_bool=True
-)
-
-# Save results
-output_path = "test_output.csv"
-results_df.to_csv(output_path, index=False)
+results_df.to_csv("output.csv", index=False)
 ```
 
-### Using OpenAI Models
+#### Custom model / API key
 
-## Output Format
+```python
+extractor = DocumentsDataExtractor(
+    inference_pipeline_name="Ollama",
+    model_name="llava:13b",
+    api_key=None,
+)
+```
 
-The extractor returns a pandas DataFrame with the following columns:
-- `text`: Extracted text content
-- `Entry Type`: Type of entry (PDF Text, PDF Picture, PDF Table)
-- `entry_fig_path`: Path to extracted figures/tables
-- `Document Publishing Date`: Publication date (if metadata extraction enabled)
-- `Document Source`: Author organizations (if metadata extraction enabled)
-- `Document Title`: Document title (if metadata extraction enabled)
+#### Text-only extraction (no VLM needed)
+
+```python
+extractor = DocumentsDataExtractor(inference_pipeline_name=None)
+
+results_df = extractor(
+    file_name="report.pdf",
+    doc_folder_path="data/original_docs",
+    figures_saving_path="data/figures",   # still required but unused
+)
+```
+
+#### Page-by-page text (keep page structure)
+
+```python
+results_df = extractor(
+    file_name="report.pdf",
+    doc_folder_path="data/original_docs",
+    figures_saving_path="data/figures",
+    return_original_pages_numbers=True,
+)
+# results_df["text"].iloc[0]  →  {"page 1": "...", "page 2": "...", ...}
+```
+
+---
+
+### CLI
+
+```bash
+# Text + figures + document metadata
+python -m documents_processing.cli \
+  --file report.pdf \
+  --data-dir data \
+  --inference OpenAI \
+  --extract-figures \
+  --metadata-type document \
+  --output output.csv
+
+# Interview document
+python -m documents_processing.cli \
+  --file interview.pdf \
+  --data-dir data \
+  --inference Ollama \
+  --metadata-type interview \
+  --output output.csv
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--file` | *(required)* | Document filename (must exist inside `--data-dir/original_docs/`) |
+| `--data-dir` | `data` | Base directory; sub-folders `original_docs/` and `figures/` are created automatically |
+| `--inference` | `OpenAI` | `OpenAI` or `Ollama` |
+| `--metadata-type` | `none` | `document`, `interview`, or `none` |
+| `--extract-figures` | off | Flag to enable figure/table extraction |
+| `--doc-url` | `None` | Download URL if the file is not present locally |
+| `--output` | `output.csv` | Output CSV path |
+
+---
+
+### Flask API
+
+Start the server:
+
+```bash
+python main_documents_extraction.py
+# listening on http://0.0.0.0:5000
+```
+
+#### Endpoints
+
+```
+GET  /health          → {"status": "ok"}
+POST /extract-doc     → extraction result
+```
+
+#### `POST /extract-doc` — request body
+
+```json
+{
+  "doc_filename":                  "report.pdf",
+  "doc_folder_path":               "data/original_docs",
+  "figures_saving_path":           "data/figures",
+  "inference_pipeline":            "OpenAI",
+  "metadata_extraction_type":      "document",
+  "extract_figures":               true,
+  "relevant_pages_for_metadata_extraction": null,
+  "doc_url":                       null,
+  "output_csv":                    "output.csv"
+}
+```
+
+#### `POST /extract-doc` — response
+
+```json
+{
+  "status": "success",
+  "document_info": {
+    "Document Title": "WASH Situation Report — Q1 2025",
+    "Document Date":  "15/01/2025",
+    "Document Source": ["UNICEF", "WHO"],
+    "Number of Pages": 24
+  },
+  "data": [
+    {
+      "text": "Access to clean water remains critical ...",
+      "Entry Type": "PDF Text",
+      "entry_fig_path": "-",
+      "File Name": "report.pdf",
+      "Document Title": "WASH Situation Report — Q1 2025",
+      "Document Publishing Date": "15/01/2025",
+      "Document Source": "['UNICEF', 'WHO']",
+      "Number of Pages": 24
+    },
+    {
+      "text": {"page 3": "35% of households lack access to safe water ..."},
+      "Entry Type": "PDF Picture",
+      "entry_fig_path": "data/figures/report/Picture/page_2_0.png",
+      "File Name": "report.pdf"
+    }
+  ],
+  "csv_path": "output.csv"
+}
+```
+
+---
+
+## Docker
+
+```bash
+# Build
+docker build -t documents-processing .
+
+# Run Flask API (port 5000)
+docker run -p 5000:5000 \
+  -e openai_api_key=sk-... \
+  -v $(pwd)/data:/app/data \
+  documents-processing
+
+# Run CLI one-shot
+docker run --rm \
+  -e openai_api_key=sk-... \
+  -v $(pwd)/data:/app/data \
+  documents-processing \
+  python -m documents_processing.cli \
+    --file report.pdf \
+    --metadata-type document \
+    --extract-figures
+```
+
+### What the image installs
+
+```mermaid
+graph TD
+    I[python:3.10-slim-bullseye] --> S1[Builder stage]
+    S1 --> S2[Runtime stage]
+    S2 --> D1[poppler-utils\npdf2image]
+    S2 --> D2[tesseract-ocr\nhandwritten OCR]
+    S2 --> D3[libgl1 + libglib2\nOpenCV]
+    S2 --> D4[wget\nYOLO weight download]
+    S2 --> D5[libreoffice\nDOCX / PPTX → PDF]
+    S2 --> D6[YOLOv10 weights\nyolov10x_best.pt]
+```
+
+---
 
 ## License
 
-This project is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (git checkout -b feature/amazing-feature)
-3. Commit your changes (git commit -m 'Add some amazing feature')
-4. Push to the branch (git push origin feature/amazing-feature)
-5. Open a Pull Request
-
-## Acknowledgements
-
-This project uses various open-source libraries and models
-Special thanks to the contributors and maintainers of the dependencies
-
-## TODO
-- generate poetry file for the project (medium priority).
-- test local api for pdf processing (medium priority).
-- test dockerfile (medium priority).
-- create docker-compose file (low priority).
+GNU Affero General Public License v3.0 — see [LICENSE](LICENSE).

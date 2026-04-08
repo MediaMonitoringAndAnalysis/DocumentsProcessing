@@ -1,76 +1,68 @@
-# Use multi-stage build for better security and smaller image size
-FROM python:3.10-slim-bullseye as builder
+# Stage 1: Builder — install Python dependencies
+FROM python:3.10-slim-bullseye AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies required for building
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user
-RUN useradd -m -u 1000 appuser
+# Copy package files first to leverage layer caching
+COPY setup.py pyproject.toml ./
+COPY documents_processing/ ./documents_processing/
 
-# Copy only requirements first to leverage Docker cache
-COPY requirements.txt .
-
-# Install dependencies in a virtual environment
+# Install into a virtual environment
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -e .
 
-# Second stage: Runtime
-FROM python:3.10-slim-bullseye as runtime
+# Stage 2: Runtime
+FROM python:3.10-slim-bullseye AS runtime
 
-# Set working directory
 WORKDIR /app
 
-# Install runtime system dependencies
+# System dependencies:
+#   - poppler-utils   → pdf2image (PDF → PNG conversion)
+#   - tesseract-ocr   → pytesseract (OCR for handwritten/scanned PDFs)
+#   - libgl1-mesa-glx + libglib2.0-0 → OpenCV
+#   - wget            → YOLO weight download
+#   - libreoffice     → DOCX/PPTX → PDF conversion
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-glx \
     libglib2.0-0 \
     poppler-utils \
+    tesseract-ocr \
+    wget \
+    libreoffice \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
 
-# Set environment variables
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    # Prevent Python from writing pyc files
     PYTHONHASHSEED=random \
-    # Enable better Python security features
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
-# Copy the application code
+# Copy application code
 COPY . .
 
-# Create necessary directories with appropriate permissions
-RUN mkdir -p /app/data/extraction/pdf_files /app/data/extraction/figures \
-    && chown -R 1000:1000 /app
+# Create data directories and non-root user
+RUN useradd -m -u 1000 appuser \
+    && mkdir -p /app/data/original_docs /app/data/figures /app/models \
+    && chown -R appuser:appuser /app
 
-# Create and switch to non-root user
-RUN useradd -m -u 1000 appuser
 USER appuser
 
-# Download YOLOv10 weights (as non-root user)
-RUN mkdir -p models \
-    && wget -O models/yolov10x_best.pt https://github.com/moured/YOLOv10-Document-Layout-Analysis/releases/download/doclaynet_weights/yolov10x_best.pt
+# Download YOLOv10 document-layout weights
+RUN wget -q -O /app/models/yolov10x_best.pt \
+    https://github.com/moured/YOLOv10-Document-Layout-Analysis/releases/download/doclaynet_weights/yolov10x_best.pt
 
-# Set secure file permissions
-RUN find /app -type d -exec chmod 755 {} \; \
-    && find /app -type f -exec chmod 644 {} \;
+EXPOSE 5000
 
-# Expose any necessary ports (if needed)
-# EXPOSE 8000
-
-# Set the entrypoint
-ENTRYPOINT ["python"]
-
-# Default command (can be overridden)
-CMD ["main_pdf_extraction.py"]
+# Default: run the Flask API. Override CMD to use the CLI instead.
+CMD ["python", "main_documents_extraction.py"]

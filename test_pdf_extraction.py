@@ -6,7 +6,7 @@ from documents_processing.documents_data_extraction import DocumentsDataExtracto
 def test_pdf_extraction(inference_pipeline_name: str):
     # Initialize the extractor
     documents_data_extractor = DocumentsDataExtractor(
-        inference_pipeline_name
+        inference_pipeline_name, model_name="gemma3:12b-it-q4_K_M"
     )
     
     # Define paths
@@ -19,13 +19,14 @@ def test_pdf_extraction(inference_pipeline_name: str):
     os.makedirs(figures_folder, exist_ok=True)
     
     # Test PDF file
-    pdf_filename = "test.pdf"
+    filename = "Philippe Crahay_climate resilience.pdf"
     
     # Extract information
     results_df = documents_data_extractor(
-        file_name=pdf_filename,
+        file_name=filename,
         doc_folder_path=pdf_folder,
-        extract_metadata_bool=True,
+        figures_saving_path=figures_folder,
+        metadata_extraction_type="interview",
         extract_figures_bool=True
     )
     
@@ -40,16 +41,19 @@ def test_pdf_extraction(inference_pipeline_name: str):
     print(f"Document Date: {results_df['Document Publishing Date'].iloc[0]}")
     print(f"Document Source: {results_df['Document Source'].iloc[0]}")
     
-    print("\nExtracted Text Entries:")
-    for idx, row in results_df.iterrows():
-        print(f"\nEntry Type: {row['Entry Type']}")
-        print(f"Text: {row['text'][:200]}...")  # Print first 200 chars
+    if "Interviewee" in results_df.columns:
+        print(f"Interviewee: {results_df['Interviewee'].iloc[0]}")
+    
+    # print("\nExtracted Text Entries:")
+    # for idx, row in results_df.iterrows():
+    #     print(f"\nEntry Type: {row['Entry Type']}")
+    #     # print(f"Text: {row['text'][:200]}...")  # Print first 200 chars
         
-    print(f"\nResults saved to: {output_path}")
+    # print(f"\nResults saved to: {output_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--inference_pipeline", type=str, default="OpenAI", choices=["OpenAI", "Ollama"])
+    parser.add_argument("--inference_pipeline", type=str, default="Ollama", choices=["OpenAI", "Ollama"])
     args = parser.parse_args()
     
     test_pdf_extraction(args.inference_pipeline) 
