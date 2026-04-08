@@ -34,8 +34,9 @@ setup(
         "flask",
         "supervision",
         "ultralytics",
+        "onnxruntime",
         "punctuators",
-        "llm-multiprocessing-inference",
+        "git+https://github.com/MediaMonitoringAndAnalysis/llm_multiprocessing_inference.git",
     ],
     extras_require={
         "dev": [
