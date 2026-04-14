@@ -316,19 +316,31 @@ class DocumentsDataExtractor:
             or metadata_extraction_type != "none"
             or metadata_extraction_type
         ):
-            with SuppressPrint():
-                figures_paths, metadata_pages_paths = extract_figures(
-                    saved_pages_images_path=figures_saving_path,
-                    pdf_file_path=doc_file_path,
-                    pdf_saved_name=file_name,
-                    metadata_extraction_type=metadata_extraction_type,
-                    relevant_pages_for_metadata_extraction=relevant_pages_for_metadata_extraction,
-                )
-                if extract_figures_bool:
-                    images_extracted_text = self._get_images_description(figures_paths)
-                    project_extracted_text = pd.concat(
-                        [project_extracted_text, images_extracted_text]
+            try:
+                with SuppressPrint():
+                    figures_paths, metadata_pages_paths = extract_figures(
+                        saved_pages_images_path=figures_saving_path,
+                        pdf_file_path=doc_file_path,
+                        pdf_saved_name=file_name,
+                        metadata_extraction_type=metadata_extraction_type,
+                        relevant_pages_for_metadata_extraction=relevant_pages_for_metadata_extraction,
                     )
+                    if extract_figures_bool:
+                        images_extracted_text = self._get_images_description(figures_paths)
+                        project_extracted_text = pd.concat(
+                            [project_extracted_text, images_extracted_text]
+                        )
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                print(f"Error in extract_figures: {e}, {traceback.format_exc()}")
+                figures_paths = {}
+                metadata_pages_paths = []
+                print(f"figures_saving_path: {figures_saving_path}")
+                print(f"doc_file_path: {doc_file_path}")
+                print(f"file_name: {file_name}")
+                print(f"metadata_extraction_type: {metadata_extraction_type}")
+                print(f"relevant_pages_for_metadata_extraction: {relevant_pages_for_metadata_extraction}")
 
         if not return_original_pages_numbers:
             project_extracted_text["text"] = project_extracted_text["text"].apply(
